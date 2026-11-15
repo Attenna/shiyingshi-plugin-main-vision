@@ -35,8 +35,8 @@ jobs:
           set -euo pipefail
           rm -rf core/plugins/main_vision
           mkdir -p core/plugins/main_vision
-          cp -R ./. core/plugins/main_vision/
-          rm -rf core/plugins/main_vision/.git core/plugins/main_vision/.github
+          git archive HEAD | tar -x -C core/plugins/main_vision
+          rm -rf core/plugins/main_vision/.github
           ./Godot_v4.5.1-stable_linux.x86_64 --headless --path core --import || true
           out=$(./Godot_v4.5.1-stable_linux.x86_64 --headless --path core --quit-after 240 2>&1 || true)
           echo "$out"

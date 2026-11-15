@@ -1,0 +1,47 @@
+name: 插件冒烟
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: core ${{ matrix.core_ref }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        core_ref: [main, core-v2.0.0]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检出 core
+        uses: actions/checkout@v4
+        with:
+          repository: Attenna/Arknights-Theurgy-Cup-Like-Streaming-Assistant
+          ref: ${{ matrix.core_ref }}
+          path: core
+
+      - name: 安装 Godot 4.5.1
+        run: |
+          curl -L -o godot.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.5.1-stable_linux.x86_64
+
+      - name: 放入插件并冒烟
+        run: |
+          set -euo pipefail
+          rm -rf core/plugins/main_vision
+          mkdir -p core/plugins/main_vision
+          cp -R ./. core/plugins/main_vision/
+          rm -rf core/plugins/main_vision/.git core/plugins/main_vision/.github
+          ./Godot_v4.5.1-stable_linux.x86_64 --headless --path core --import || true
+          out=$(./Godot_v4.5.1-stable_linux.x86_64 --headless --path core --quit-after 240 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "插件已加载并启用: main_vision"
+          if echo "$out" | grep -q "SCRIPT ERROR"; then
+            echo "存在 SCRIPT ERROR" >&2
+            exit 1
+          fi
